@@ -1,0 +1,14 @@
+﻿qdrant-client>=1.10
+langchain
+langchain-community
+sentence-transformers
+scikit-learn
+networkx
+pytesseract
+pymupdf
+streamlit
+lamatic
+pytest
+spacy
+python-dotenv
+rank-bm25
