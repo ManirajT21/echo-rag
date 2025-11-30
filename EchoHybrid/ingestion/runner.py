@@ -42,7 +42,8 @@ class DocumentProcessor:
         Initialize the document processor.
         """
         self.output_dir = Path(output_dir)
-        self.embeddings_dir = Path(r"C:\Users\ZEPHYRUS\Desktop\echo-rag\EchoHybrid\generated_embeddings")
+        base_dir = Path(__file__).resolve().parent.parent   # Points to EchoHybrid/
+        self.embeddings_dir = base_dir / "generated_embeddings"
         self.redact_sensitive = redact_sensitive
         self.max_chunk_size = max_chunk_size
         self.chunk_overlap = chunk_overlap

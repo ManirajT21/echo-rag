@@ -80,19 +80,14 @@ class QdrantVectorStore:
         # Generate proper UUIDs
         ids = [str(uuid.uuid4()) for _ in embeddings]
         
-        # Prepare points for Qdrant - store only embeddings and minimal metadata
+        # Prepare points for Qdrant - store embeddings and full metadata including text
         points = []
         for idx, (embedding, metadata) in enumerate(zip(embeddings, metadatas)):
-            # Create minimal metadata without text content
-            minimal_metadata = {
-                k: v for k, v in metadata.items() 
-                if k not in ['text', 'content']  # Exclude actual text content
-            }
-            
+            # Include all metadata, including text content
             point = PointStruct(
                 id=ids[idx],
                 vector=embedding,
-                payload=minimal_metadata  # Only store metadata, not text
+                payload=metadata  # Store all metadata including text
             )
             points.append(point)
         

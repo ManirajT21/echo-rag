@@ -1,258 +1,240 @@
-EchoHybrid RAG System
-A comprehensive document processing pipeline for building Retrieval-Augmented Generation (RAG) systems. This system processes various document formats, generates embeddings, and stores them in a vector database for efficient similarity search.
+# EchoHybrid RAG System
 
-🚀 Features
-Multi-format Document Parsing: Supports PDF, DOCX, TXT, and more
+EchoHybrid is a secure, research-grade **Retrieval-Augmented Generation (RAG)** system that implements a **two-layer architecture**:
 
-Intelligent Chunking: Hybrid chunking strategy with configurable size and overlap
+- **First Layer** → Document ingestion, chunking, redaction, embedding, and secure vector storage
+- **Second Layer** → Deterministic hybrid retrieval with echo-based refinement
 
-Sensitive Information Redaction: Optional redaction of sensitive content
+This system is designed for **privacy-preserving RAG**, where **only embeddings are stored in the vector database**, and all raw text is kept locally.
 
-Embedding Generation: Uses Sentence Transformers for vector embeddings
+---
 
-Vector Storage: Stores embeddings in Qdrant vector database
+## 🚀 Features
 
-Embeddings-Only Storage: Secure storage without text content in database
+### ✅ First Layer – Secure Ingestion
 
-Batch Processing: Efficient processing of multiple documents
+- Multi-format Document Parsing (PDF, DOCX, TXT, etc.)
+- Hybrid Intelligent Chunking with configurable size and overlap
+- Optional Sensitive Information Redaction
+- Embedding Generation using Sentence Transformers
+- Secure Embeddings-Only Storage in Qdrant (no raw text)
+- Batch Processing for multiple documents
 
-📋 Prerequisites
-Python 3.8+
+### ✅ Second Layer – Deterministic Retrieval (Integrated)
 
-Qdrant Server (running locally or remotely)
+- Dense Vector Search via Qdrant
+- Sparse Keyword Search from local `chunking_output`
+- Echo-based Query Refinement (without LLM)
+- Reciprocal Rank Fusion (RRF)
+- Secure Text Hydration from local storage
+- Fully Offline, LLM-Free Retrieval Engine
+- CLI-based Retrieval Interface
 
-CUDA-capable GPU (optional, for faster embeddings)
+---
 
-🛠 Installation
-Clone the repository:
+## 📋 Prerequisites
 
-bash
+- Python **3.9 – 3.13**
+- Qdrant Server (local)
+- Docker (recommended for Qdrant)
+- CUDA-capable GPU (optional, for faster embeddings)
+
+---
+
+## 🛠 Installation
+
+### 1. Clone the Repository
+
+```bash
 git clone <repository-url>
-cd echohybrid
-Create virtual environment:
-
+cd EchoHybrid
+2. Create Virtual Environment
 bash
-python -m venv myvenv
-source myvenv/bin/activate  # On Windows: myvenv\Scripts\activate
-Install dependencies:
-
+Copy code
+python -m venv venv
+venv\Scripts\activate   # Windows
+3. Install Dependencies
 bash
+Copy code
 pip install -r requirements.txt
-Set up environment variables:
+4. Environment Variables
 Create a .env file in the project root:
 
 env
+Copy code
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
-🚀 Quick Start
-1. Start Qdrant Server
-Using Docker:
-
+🚀 Quick Start Guide
+✅ Step 1: Start Qdrant (Docker Recommended)
 bash
+Copy code
 docker run -p 6333:6333 -p 6334:6334 qdrant/qdrant
-Using Qdrant Binary:
-Download from Qdrant GitHub and run:
+Dashboard:
 
+text
+Copy code
+http://localhost:6333/dashboard
+✅ Step 2: Reset the Vector Collection
 bash
-./qdrant
-2. Reset Collection (Clean Start)
+Copy code
+python -m reset_collection
+✅ Step 3: Ingest Documents (First Layer)
+Single File
 bash
-python reset_embeddings.py
-3. Process Documents
-Single File:
-
+Copy code
+python -m ingestion.runner "path/to/your/document.pdf" --recreate-collection
+Multiple Files
 bash
-python -m ingestion.runner "path/to/your/document.pdf"
-Directory of Files:
-
-bash
+Copy code
 python -m ingestion.runner "path/to/documents/" --pattern "*.pdf"
-4. Verify Storage
+This will generate:
+
+parsed_output/
+
+chunking_output/
+
+generated_embeddings/
+
+And store embeddings in:
+
+Qdrant collection: document_embeddings
+
+✅ Step 4: Verify Secure Storage
 bash
+Copy code
 python check_embeddings_only.py
+python check_vectors.py
+Expected:
+
+✅ Collection exists
+
+✅ Total embeddings stored
+
+✅ No raw text in Qdrant
+
+🔎 Second Layer: Retrieval Engine (Integrated)
+Location:
+
+text
+Copy code
+EchoHybrid/retrieval/engine.py
+✅ Run a Query
+bash
+Copy code
+python -m retrieval.engine "What are the main types of distribution graphs and their primary uses?"
+✅ Example Output
+json
+Copy code
+[
+  {
+    "rank": 1,
+    "score": 0.153,
+    "text": "…retrieved document text…",
+    "source_file": "M2 S3- Distribution Display.pdf",
+    "page_or_time": "",
+    "highlight_terms": [],
+    "found_in_round": "echo_1",
+    "modality": "text"
+  }
+]
 📁 Project Structure
 text
-echohybrid/
+Copy code
+EchoHybrid/
 ├── ingestion/
-│   ├── runner.py          # Main pipeline runner
-│   ├── parser.py          # Document parsing
-│   ├── chunker.py         # Text chunking
-│   ├── embedder.py        # Embedding generation
-│   ├── vector_store.py    # Qdrant integration
-│   └── redactor.py        # Sensitive data redaction
-├── generated_embeddings/  # Local embedding storage
-├── chunking_output/       # Processed chunks storage
-├── parsed_output/         # Parsed documents storage
-├── reset_embeddings.py    # Collection reset utility
-├── check_vectors.py       # Vector storage verification
-└── check_embeddings_only.py # Embeddings-only verification
-⚙️ Configuration
-Command Line Arguments
+│   ├── runner.py
+│   ├── parser.py
+│   ├── chunker.py
+│   ├── embedder.py
+│   ├── vector_store.py
+│   └── redactor.py
+├── retrieval/
+│   ├── engine.py
+│   ├── recipe_selector.py
+│   └── (other retrieval modules)
+├── generated_embeddings/
+├── chunking_output/
+├── parsed_output/
+├── reset_collection.py
+├── check_vectors.py
+├── check_embeddings_only.py
+├── config.py
+├── app.py
+└── requirements.txt
+⚙️ Ingestion Configuration (CLI)
 Argument	Description	Default
-input_path	File or directory to process	Required
---output-dir	Output directory for chunks	chunking_output
---no-redact	Disable sensitive data redaction	Enabled
---chunk-size	Maximum chunk size in tokens	1000
---chunk-overlap	Token overlap between chunks	200
---pattern	File pattern for directories	*
---embed-model	Embedding model name	all-MiniLM-L6-v2
---device	Processing device	cuda/cpu
---qdrant-collection	Qdrant collection name	document_embeddings
---recreate-collection	Recreate collection	False
-Supported Models
-all-MiniLM-L6-v2 (Default, 384 dimensions)
+input_path	File or directory	Required
+--output-dir	Chunk output	chunking_output
+--no-redact	Disable redaction	Enabled
+--chunk-size	Max chunk size	1000
+--chunk-overlap	Token overlap	200
+--pattern	File pattern	*
+--embed-model	Embedding model	all-MiniLM-L6-v2
+--device	Processing device	cpu/cuda
+--qdrant-collection	Qdrant collection	document_embeddings
+--recreate-collection	Recreate	False
 
-all-mpnet-base-v2 (768 dimensions)
+🤖 Supported Models
+all-MiniLM-L6-v2 (384d)
 
-multi-qa-MiniLM-L6-cos-v1 (384 dimensions)
+all-mpnet-base-v2 (768d)
 
-Custom Sentence Transformer models
+multi-qa-MiniLM-L6-cos-v1
 
-🔧 Advanced Usage
-Custom Processing Pipeline
-python
-from ingestion.runner import DocumentProcessor
-
-# Initialize processor
-processor = DocumentProcessor(
-    output_dir="custom_output",
-    max_chunk_size=800,
-    chunk_overlap=100,
-    embed_model="all-mpnet-base-v2",
-    qdrant_collection="my_collection",
-    recreate_collection=True
-)
-
-# Process files
-chunks = processor.process_file("document.pdf")
-
-# Verify storage
-processor.verify_embeddings_storage()
-Batch Processing Multiple Files
-python
-from ingestion.runner import DocumentProcessor
-
-processor = DocumentProcessor()
-results = processor.process_directory("/path/to/documents")
-print(f"Processed {len(results)} chunks from all documents")
-Custom Embedding Storage
-python
-from ingestion.embedder import DocumentEmbedder
-from ingestion.vector_store import QdrantVectorStore
-
-# Custom vector store
-vector_store = QdrantVectorStore(
-    collection_name="custom_embeddings",
-    vector_size=768,
-    recreate_collection=True
-)
-
-# Custom embedder
-embedder = DocumentEmbedder(
-    model_name="all-mpnet-base-v2",
-    vector_store=vector_store,
-    device="cuda"
-)
-
-# Generate and store embeddings
-documents = [{"text": "Sample text", "metadata": {"source": "test"}}]
-results = embedder.embed_documents(documents)
-🔍 Verification Tools
-Check Stored Vectors
-bash
-python check_vectors.py
-Verify Embeddings-Only Storage
-bash
-python check_embeddings_only.py
-Check Collection Info via curl
-bash
-curl "http://localhost:6333/collections/document_embeddings"
-🗂 Output Files
-Parsed Documents: parsed_output/{filename}_{timestamp}.json
-
-Chunked Content: chunking_output/{filename}_chunks_{timestamp}.json
-
-Embeddings: generated_embeddings/{source}_{model}.json
-
-Vector Storage: Qdrant collection document_embeddings
+Custom SentenceTransformer models
 
 🔒 Security Features
-Text Content Isolation: Only embeddings stored in database, no raw text
+✅ Embeddings-only storage in Qdrant
 
-Sensitive Data Redaction: Optional redaction of PII and sensitive information
+✅ No raw text in the vector DB
 
-Secure Metadata: Metadata stored without text content in vector database
+✅ Optional PII redaction
+
+✅ Local-only text hydration
 
 🐛 Troubleshooting
-Common Issues
-Qdrant Connection Error:
-
-Ensure Qdrant server is running: curl http://localhost:6333/
-
-Check environment variables in .env file
-
-Model Loading Issues:
-
-Check internet connection for model downloads
-
-Verify CUDA availability for GPU processing
-
-Duplicate Vectors:
-
-Use --recreate-collection to start fresh
-
-Run python reset_embeddings.py to clear existing data
-
-Memory Issues:
-
-Reduce batch size in embedder configuration
-
-Use smaller embedding models
-
-Process documents in smaller batches
-
-Debug Mode
-Enable verbose logging by modifying the runner:
-
-python
-processor = DocumentProcessor(verbose=True)
+Qdrant Not Running
+bash
+Copy code
+curl http://localhost:6333
+Clear Collection
+bash
+Copy code
+python -m reset_collection
+Check GPU
+bash
+Copy code
+nvidia-smi
 📊 Performance Tips
-Use GPU (--device cuda) for faster embedding generation
+Use GPU if available
 
-Adjust --chunk-size based on your document content
+Adjust chunk size
 
-Use batch processing for multiple documents
+Avoid extremely large PDFs
 
-Monitor Qdrant memory usage for large collections
+Monitor Qdrant dashboard
 
 🤝 Contributing
-Fork the repository
+Fork the repo
 
-Create a feature branch
+Create a branch
 
-Make your changes
+Commit changes
 
 Add tests
 
-Submit a pull request
+Open a PR
 
 📄 License
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-🆘 Support
-For issues and questions:
-
-Check the troubleshooting section
-
-Review existing GitHub issues
-
-Create a new issue with detailed description
+MIT License
 
 🔄 Version History
-v1.0.0: Initial release with basic RAG pipeline
+v1.0.0 – Secure ingestion + embeddings
 
-v1.1.0: Added embeddings-only storage for security
+v1.1.0 – Embeddings-only Qdrant storage
 
-v1.2.0: Enhanced chunking strategies and verification tools
+v1.2.0 – Chunking + verification
 
-Note: This system is designed for secure document processing with privacy-focused embedding storage. No raw text content is stored in the vector database, only numerical embeddings.
+v2.0.0 – Integrated deterministic hybrid retrieval (EchoHybrid)
+
+```
